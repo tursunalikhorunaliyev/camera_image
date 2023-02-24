@@ -1,11 +1,7 @@
-import 'dart:developer';
-import 'dart:io';
-
-import 'package:camera_image/providers/image_path_provider.dart';
+import 'package:camera_image/services/camera_service.dart';
+import 'package:camera_image/widgets/picture_card.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -15,50 +11,74 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  final cameraService = CameraService(imageCount: 2);
   @override
-  void initState() {
-    super.initState();
-  }
-
-  Future<void> getLostData() async {
-    final LostDataResponse response = await ImagePicker().retrieveLostData();
-    if (response.isEmpty) {
-      return;
-    }
-    if (response.files != null) {
-      log("yo'qolgan malumotlar topildi");
-    } else {
-      log("yo'qolgan ma'lumot topilmadi");
-    }
+  void dispose() {
+    cameraService.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final imagePathProvider = Provider.of<ImagePathProvider>(context);
     return Scaffold(
-        body: Center(
-      child: GestureDetector(
-        onTap: () async {
-          imagePathProvider.takePicWithoutPermission();
-        },
-        child: Container(
-          width: 200,
-          height: 200,
-          decoration:
-              const BoxDecoration(color: Colors.purple, shape: BoxShape.circle),
-          child: imagePathProvider.getImage() != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(100),
-                  child: Image.file(
-                    File(imagePathProvider.getImage()!.path),
-                    fit: BoxFit.cover,
-                    height: 200,
-                    width: 200,
-                  ),
-                )
-              : const SizedBox(),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 5),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                StreamBuilder<List<XFile>>(
+                    stream: cameraService.streamList,
+                    builder: (context, snapshot) {
+                      return PictureCard(
+                          imagePath: snapshot.hasData
+                              ? snapshot.data!.isNotEmpty
+                                  ? snapshot.data![0].path
+                                  : ""
+                              : "",
+                          onTap: () => _onTapCard(CameraAction.takePic));
+                    }),
+                StreamBuilder<List<XFile>>(
+                    stream: cameraService.streamList,
+                    builder: (context, snapshot) {
+                      return PictureCard(
+                          imagePath: snapshot.hasData
+                              ? snapshot.data!.length >= 2
+                                  ? snapshot.data![1].path
+                                  : ""
+                              : "",
+                          onTap: () => _onTapCard(CameraAction.takePic));
+                    }),
+              ],
+            ),
+            SizedBox(height: 20),
+            GestureDetector(
+              onTap: () => _onTapCard(CameraAction.sendPic),
+              child: Container(
+                width: 370,
+                height: 50,
+                decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(5)),
+              ),
+            )
+          ],
         ),
       ),
-    ));
+    );
+  }
+
+  void _onTapCard(CameraAction action) {
+    switch (action) {
+      case CameraAction.takePic:
+        cameraService.streamSinkCamera.add(action);
+        break;
+      case CameraAction.sendPic:
+        break;
+      case CameraAction.deletePic:
+        break;
+      default:
+    }
   }
 }
