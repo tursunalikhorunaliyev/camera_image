@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:camera_image/services/camera_service.dart';
 import 'package:camera_image/widgets/picture_card.dart';
 import 'package:flutter/material.dart';
@@ -25,34 +27,31 @@ class _HomeState extends State<Home> {
         padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 5),
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                StreamBuilder<List<XFile>>(
-                    stream: cameraService.streamList,
-                    builder: (context, snapshot) {
-                      return PictureCard(
+            StreamBuilder<List<XFile>>(
+              stream: cameraService.streamList,
+              builder: (context, snapshot) {
+                log("This streams working only once when its stream sink is requested");
+                return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      PictureCard(
                           imagePath: snapshot.hasData
                               ? snapshot.data!.isNotEmpty
                                   ? snapshot.data![0].path
                                   : ""
                               : "",
-                          onTap: () => _onTapCard(CameraAction.takePic));
-                    }),
-                StreamBuilder<List<XFile>>(
-                    stream: cameraService.streamList,
-                    builder: (context, snapshot) {
-                      return PictureCard(
+                          onTap: () => _onTapCard(CameraAction.takePic)),
+                      PictureCard(
                           imagePath: snapshot.hasData
                               ? snapshot.data!.length >= 2
                                   ? snapshot.data![1].path
                                   : ""
                               : "",
-                          onTap: () => _onTapCard(CameraAction.takePic));
-                    }),
-              ],
+                          onTap: () => _onTapCard(CameraAction.takePic))
+                    ]);
+              },
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             GestureDetector(
               onTap: () => _onTapCard(CameraAction.sendPic),
               child: Container(
